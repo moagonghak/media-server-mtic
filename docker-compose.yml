@@ -1,0 +1,52 @@
+version: "3.8"
+
+services:
+  media-db:
+    image: mysql:8
+    env_file:
+      - .env
+    restart: unless-stopped
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+    volumes:
+      - media-db-data:/var/lib/mysql:rw
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/schema.sql:rw
+      - ./db/conf.d:/etc/mysql/conf.d
+      - ./db/initdb.d:/docker-entrypoint-initdb.d:rw
+    ports:
+      - ${EXTERNAL_MYSQL_PORT}:${MYSQL_PORT}
+    networks:
+      - mtic-network
+
+  mtic-media:
+    env_file:
+      - .env
+    depends_on:
+      - media-db
+    build: .
+    restart: unless-stopped
+    environment:
+      - MYSQL_HOST=media-db
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_PORT=${MYSQL_PORT}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+    ports:
+      - ${EXTERNAL_SERVER_PORT}:${PORT}
+    volumes:
+      - '.:/usr/src/api' # Dockerfile의 WORKDIR와 맞추기
+      - '/usr/src/api/node_modules' # 핫 리로드 성능 개선
+    networks:
+      - mtic-network
+
+volumes:
+  media-db-data:
+
+networks:
+  mtic-network:
+    external: true

@@ -1,0 +1,9 @@
+# See https://www.dartlang.org/guides/libraries/private-files
+
+node_modules/
+
+
+.env
+.env.local
+.env.production
+.env.development
